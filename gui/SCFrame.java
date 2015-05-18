@@ -4,6 +4,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -20,29 +23,40 @@ import javax.swing.border.EmptyBorder;
 public class SCFrame extends JFrame {
     String mob;
     HashMap<String,SCItem> items;
+    ArrayList<String> order;
     Logger log;
     static int defaultcolumns = 4;
+    ArrayList<JTextField> fields;
+    static SCFrame self;
 
-    public SCFrame(String m, HashMap<String,SCItem> i) {
-        this(m,i,0,0);
+    public SCFrame(String m, HashMap<String,SCItem> i, ArrayList<String> o) {
+        this(m,i,o,0,0);
     }
 
-    public SCFrame(String m, HashMap<String,SCItem> i, int x, int y) {
+    public SCFrame(String m, HashMap<String,SCItem> i, ArrayList<String> o, int x, int y) {
         this.log = SpringCleanerLog.log;
+        self = this;
         log.info("Creating gui");
         this.items = i;
+        this.order = o;
         this.mob = m;
+        this.fields = new ArrayList<JTextField>();
 
         setLocation(x,y);
         setTitle("Spring Cleaner logger: "+mob);
+        setIconImage(Toolkit.getDefaultToolkit().createImage(this.getClass().getResource(SpringCleanerLog.iconimg)));
 
         JPanel contentpanel = new JPanel();
-        contentpanel.setLayout(new BoxLayout(contentpanel,BoxLayout.Y_AXIS));
+        contentpanel.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
         setContentPane(contentpanel);
         contentpanel.setBorder(new EmptyBorder(5,5,5,5));
 
         JMenuBar menubar = new JMenuBar();
         JMenu filemenu = new JMenu("File");
+        JMenu editmenu = new JMenu("Edit");
+        JMenu helpmenu = new JMenu("Help");
+
         JMenuItem open = new JMenuItem("Open");
         open.setAction(new OpenAction(this, UIManager.getIcon("FileView.directoryIcon")));
         open.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
@@ -56,125 +70,196 @@ public class SCFrame extends JFrame {
             }
         });
 
+        JCheckBoxMenuItem enableedit = new JCheckBoxMenuItem("Enable manual editing");
+        enableedit.setState(true);
+        enableedit.setAction(new AbstractAction("Enable manual editing") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean editable = !fields.get(0).isEditable();
+                for (JTextField f : fields) {
+                    f.setEditable(editable);
+                }
+            }
+        });
+
+        JMenuItem viewgithub = new JMenuItem("View on GitHub");
+        viewgithub.setAction(new AbstractAction("View on GitHub") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(SpringCleanerLog.githuburl));
+                } catch (Exception ex) {
+                    log.severe("Something went wrong opening URI!\nActionEvent: "+e.paramString());
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(SCFrame.self,"Oops! Something went wrong","Error",JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        JMenuItem about = new JMenuItem("About");
+        about.setAction(new AbstractAction("About") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JOptionPane.showMessageDialog(SCFrame.self,
+                        "SpringCleanerLog\n" +
+                                "Created and maintained by Gaz Lloyd\n" +
+                                "http://rs.wikia.com/User:Gaz_Lloyd\n" +
+                                SpringCleanerLog.githuburl,
+                        "About", JOptionPane.INFORMATION_MESSAGE, new ImageIcon(this.getClass().getResource(SpringCleanerLog.iconimg)));
+            }
+        });
+
         filemenu.add(open);
         filemenu.add(newmob);
         filemenu.add(exit);
+
+        editmenu.add(enableedit);
+
+        helpmenu.add(viewgithub);
+        helpmenu.add(about);
+
         menubar.add(filemenu);
-        this.setJMenuBar(menubar);
+        menubar.add(editmenu);
+        menubar.add(helpmenu);
+        setJMenuBar(menubar);
 
-
-        JPanel mobpanel = new JPanel();
         JLabel moblabel = new JLabel("Spring cleaner log for: " + mob);
-        mobpanel.add(moblabel);
-        contentpanel.add(mobpanel);
+        Font f = moblabel.getFont();
+        Font f2 = f.deriveFont(Font.BOLD,f.getSize()+2);
+        moblabel.setFont(f2);
+        moblabel.setBorder(new EmptyBorder(0,5,10,5));
+        moblabel.setHorizontalAlignment(SwingConstants.CENTER);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.PAGE_START;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.gridwidth = 13;
+        contentpanel.add(moblabel, c);
 
-        for (String k : items.keySet()) {
-            contentpanel.add(new JSeparator());
-
+        c.anchor = GridBagConstraints.CENTER;
+        Font f3 = f.deriveFont(Font.BOLD);
+        int row = 1;
+        for (String k : order) {
             SCItem item = items.get(k);
-            JPanel itempanel = new JPanel();
-            itempanel.setLayout(new BoxLayout(itempanel, BoxLayout.X_AXIS));
-            //itempanel.setAlignmentX(CENTER_ALIGNMENT);
-            //itempanel.setAlignmentY(CENTER_ALIGNMENT);
+
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.gridy = row;
+            c.gridx = 0;
+            c.gridwidth = 13;
+            contentpanel.add(new JSeparator(),c);
+
+            c.gridheight = item.isMultiPartial() ? item.getPartials().size() : 1;
+            c.gridwidth = 1;
+
             JLabel itemlabel = new JLabel(item.getName());
             itemlabel.setBorder(new EmptyBorder(5, 5, 5, 5));
+            itemlabel.setFont(f3);
+            c.gridy = ++row;
+            c.gridx = 0;
+            contentpanel.add(itemlabel,c);
 
-            JPanel labelpanel = new JPanel();
-            labelpanel.setLayout(new BoxLayout(labelpanel, BoxLayout.Y_AXIS));
-            labelpanel.add(Box.createVerticalGlue());
-            labelpanel.add(itemlabel);
-            labelpanel.add(Box.createVerticalGlue());
-            itempanel.add(labelpanel);
-            itempanel.add(Box.createHorizontalGlue());
+            c.gridx = 1;
+            contentpanel.add(Box.createRigidArea(new Dimension(10,1)),c);
 
-            JPanel itempanelsuccess = new JPanel(new FlowLayout());
-            //itempanelsuccess.setAlignmentX(CENTER_ALIGNMENT);
-            //itempanelsuccess.setAlignmentY(CENTER_ALIGNMENT);
-            itempanelsuccess.add(new JLabel("Success"));
+            JLabel successlabel = new JLabel("Success");
+            successlabel.setBorder(new EmptyBorder(5,5,5,5));
+            c.gridx = 2;
+            contentpanel.add(successlabel,c);
+
             JTextField successfield = new JTextField(""+item.getSuccess(),defaultcolumns);
-            //successfield.setAlignmentX(CENTER_ALIGNMENT);
-            //successfield.setAlignmentY(CENTER_ALIGNMENT);
-            successfield.setAction(new EditAction(successfield, item, "success"));
-            itempanelsuccess.add(successfield);
+            successfield.setAction(new EditAction(successfield, item, CounterType.SUCCESS));
+            successfield.setHorizontalAlignment(SwingConstants.RIGHT);
+            c.gridx = 3;
+            c.fill = GridBagConstraints.NONE;
+            contentpanel.add(successfield,c);
+            fields.add(successfield);
+
             JButton successbutton = new JButton("+");
-            successbutton.setAction(new IncrementAction(successfield, item, "success"));
-            itempanelsuccess.add(successbutton);
+            successbutton.setAction(new IncrementAction(successfield, item, CounterType.SUCCESS));
+            c.gridx = 4;
+            contentpanel.add(successbutton,c);
 
-            JPanel itempanelsuccessholder = new JPanel();
-            itempanelsuccessholder.setLayout(new BoxLayout(itempanelsuccessholder,BoxLayout.Y_AXIS));
-            itempanelsuccessholder.add(Box.createVerticalGlue());
-            itempanelsuccessholder.add(itempanelsuccess);
-            itempanelsuccessholder.add(Box.createVerticalGlue());
-            itempanel.add(itempanelsuccessholder);
+            c.gridx = 5;
+            contentpanel.add(Box.createRigidArea(new Dimension(10,1)),c);
 
-            JPanel itempanelfailure = new JPanel(new FlowLayout());
-            //itempanelfailure.setAlignmentX(CENTER_ALIGNMENT);
-            //itempanelfailure.setAlignmentY(CENTER_ALIGNMENT);
-            itempanelfailure.add(new JLabel("Failure"));
+            JLabel failurelabel = new JLabel("Failure");
+            failurelabel.setBorder(new EmptyBorder(5,5,5,5));
+            c.gridx = 6;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            contentpanel.add(failurelabel,c);
+
             JTextField failurefield = new JTextField(""+item.getFailure(),defaultcolumns);
-            failurefield.setAction(new EditAction(failurefield, item, "failure"));
-            itempanelfailure.add(failurefield);
+            failurefield.setAction(new EditAction(failurefield, item, CounterType.FAILURE));
+            failurefield.setHorizontalAlignment(SwingConstants.RIGHT);
+            c.gridx = 7;
+            c.fill = GridBagConstraints.NONE;
+            contentpanel.add(failurefield,c);
+            fields.add(failurefield);
+
             JButton failurebutton = new JButton("+");
-            failurebutton.setAction(new IncrementAction(failurefield, item, "failure"));
-            itempanelfailure.add(failurebutton);
+            failurebutton.setAction(new IncrementAction(failurefield, item, CounterType.FAILURE));
+            c.gridx = 8;
+            contentpanel.add(failurebutton,c);
 
-            JPanel itempanelfailureholder = new JPanel();
-            itempanelfailureholder.setLayout(new BoxLayout(itempanelfailureholder,BoxLayout.Y_AXIS));
-            itempanelfailureholder.add(Box.createVerticalGlue());
-            itempanelfailureholder.add(itempanelfailure);
-            itempanelfailureholder.add(Box.createVerticalGlue());
-            itempanel.add(itempanelfailureholder);
+            c.gridx = 9;
+            contentpanel.add(Box.createRigidArea(new Dimension(10,1)),c);
 
-
-            JPanel itempanelpartial;
             if (item.hasNoPartial()) {
-                itempanelpartial = new JPanel();
-                itempanel.add(Box.createHorizontalGlue());
-                itempanelpartial.add(new JLabel("no partial failure"));
+                JLabel partiallabel = new JLabel("no partial failure");
+                partiallabel.setBorder(new EmptyBorder(5,5,5,5));
+                partiallabel.setHorizontalAlignment(SwingConstants.RIGHT);
+                c.gridx = 10;
+                c.gridwidth = 3;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                contentpanel.add(partiallabel,c);
+                row++;
             }
             else if (item.isMultiPartial()) {
-                itempanelpartial = new JPanel();
-                itempanelpartial.setLayout(new BoxLayout(itempanelpartial, BoxLayout.Y_AXIS));
-                //itempanelpartial.setAlignmentY(CENTER_ALIGNMENT);
-                //itempanelpartial.setAlignmentX(CENTER_ALIGNMENT);
-                itempanelpartial.add(Box.createVerticalGlue());
-                for (String j : item.getPartials().keySet()) {
-                    JPanel itempanelpartials = new JPanel();
-                    itempanelpartials.setLayout(new BoxLayout(itempanelpartials, BoxLayout.X_AXIS));
-                    itempanelpartials.add(Box.createHorizontalGlue());
-                    itempanelpartials.add(new JLabel(j));
+                c.gridheight = 1;
+                for (String j : item.getOrder()) {
+                    JLabel partiallabel = new JLabel(j);
+                    partiallabel.setBorder(new EmptyBorder(5,5,5,5));
+                    c.gridx = 10;
+                    c.fill = GridBagConstraints.HORIZONTAL;
+                    c.gridy = row;
+                    contentpanel.add(partiallabel,c);
+
                     JTextField partialfield = new JTextField("" + item.getPartial(j),defaultcolumns);
-                    partialfield.setMaximumSize(new Dimension(50,20));
                     partialfield.setAction(new EditAction(partialfield, item, j));
-                    itempanelpartials.add(partialfield);
+                    partialfield.setHorizontalAlignment(SwingConstants.RIGHT);
+                    c.gridx = 11;
+                    c.fill = GridBagConstraints.NONE;
+                    contentpanel.add(partialfield,c);
+                    fields.add(partialfield);
+
                     JButton partialbutton = new JButton("+");
                     partialbutton.setAction(new IncrementAction(partialfield, item, j));
-                    itempanelpartials.add(partialbutton);
-                    itempanelpartial.add(itempanelpartials);
+                    c.gridx = 12;
+                    contentpanel.add(partialbutton,c);
+                    row++;
                 }
-                itempanelpartial.add(Box.createVerticalGlue());
             } else {
-                itempanelpartial = new JPanel();
-                itempanelpartial.setLayout(new BoxLayout(itempanelpartial, BoxLayout.Y_AXIS));
-                //itempanelpartial.setAlignmentY(CENTER_ALIGNMENT);
-                //itempanelpartial.setAlignmentX(CENTER_ALIGNMENT);
-                itempanelpartial.add(Box.createVerticalGlue());
-                JPanel itempanelpartialinner = new JPanel(new FlowLayout());
-                //itempanelpartialinner.setAlignmentY(CENTER_ALIGNMENT);
-                //itempanelpartialinner.setAlignmentX(CENTER_ALIGNMENT);
-                itempanelpartialinner.add(new JLabel("Partial"));
-                JTextField partialfield = new JTextField("" + item.getPartial(),defaultcolumns);
-                partialfield.setAction(new EditAction(partialfield, item, "partial"));
-                itempanelpartialinner.add(partialfield);
-                JButton partialbutton = new JButton("+");
-                partialbutton.setAction(new IncrementAction(partialfield, item, "partial"));
-                itempanelpartialinner.add(partialbutton);
-                itempanelpartial.add(itempanelpartialinner);
-                itempanelpartial.add(Box.createVerticalGlue());
-            }
-            itempanel.add(itempanelpartial);
+                c.gridx = 10;
+                c.gridwidth = 1;
 
-            contentpanel.add(itempanel);
+                JLabel partiallabel = new JLabel("Failure");
+                partiallabel.setBorder(new EmptyBorder(5,5,5,5));
+                c.fill = GridBagConstraints.HORIZONTAL;
+                contentpanel.add(partiallabel,c);
+
+                JTextField partialfield = new JTextField("" + item.getPartial(),defaultcolumns);
+                partialfield.setAction(new EditAction(partialfield, item, CounterType.PARTIAL));
+                partialfield.setHorizontalAlignment(SwingConstants.RIGHT);
+                c.gridx = 11;
+                c.fill = GridBagConstraints.NONE;
+                contentpanel.add(partialfield,c);
+                fields.add(partialfield);
+
+                JButton partialbutton = new JButton("+");
+                partialbutton.setAction(new IncrementAction(partialfield, item, CounterType.PARTIAL));
+                c.gridx = 12;
+                contentpanel.add(partialbutton,c);
+                row++;
+            }
 
             setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             pack();

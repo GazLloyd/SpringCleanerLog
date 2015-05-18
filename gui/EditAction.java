@@ -12,12 +12,20 @@ import java.awt.event.ActionEvent;
  */
 public class EditAction extends AbstractAction {
     JTextField field;
-    String thing;
+    CounterType type;
     SCItem item;
+    String partial;
     public EditAction(JTextField f, SCItem i, String t) {
         field = f;
         item = i;
-        thing = t;
+        partial = t;
+        type = CounterType.MULTIPARTIAL;
+    }
+
+    public EditAction(JTextField f, SCItem i, CounterType t) {
+        field = f;
+        item = i;
+        type = t;
     }
 
     @Override
@@ -28,14 +36,30 @@ public class EditAction extends AbstractAction {
             v = Integer.parseInt(t);
         } catch (NumberFormatException ex) {
             field.setBackground(Color.RED);
+            SpringCleanerLog.log.info("Field was edited, but it wasn't a positive integer! Setting to red");
             return;
         }
         if (v < 0) {
             field.setBackground(Color.RED);
+            SpringCleanerLog.log.info("Field was edited, but it wasn't a positive integer! Setting to red");
         }
         else {
             field.setBackground(Color.WHITE);
-            item.setValue(thing,v);
+            switch (type) {
+                case SUCCESS:
+                    item.setSuccess(v);
+                    break;
+                case FAILURE:
+                    item.setFailure(v);
+                    break;
+                case PARTIAL:
+                    item.setPartial(v);
+                    break;
+                case MULTIPARTIAL:
+                    item.setPartial(partial,v);
+                    break;
+            }
+            SpringCleanerLog.log.info("Field was successfully edited! Set "+item.getName()+": "+(type == CounterType.MULTIPARTIAL ? partial : type)+" to "+v);
         }
     }
 }

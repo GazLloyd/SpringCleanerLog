@@ -19,6 +19,8 @@ public class SpringCleanerLog {
     public LogFile l;
     public SCFrame f;
     public static SpringCleanerLog self;
+    public static String githuburl = "https://github.com/GazLloyd";
+    public static String iconimg = "/img/Spring_cleaner_detail.png";
 
     public static SpringCleanerLog remake(File file, int x, int y) {
         return new SpringCleanerLog(file,x,y);
@@ -31,7 +33,7 @@ public class SpringCleanerLog {
     public SpringCleanerLog(File file, int x, int y) {
         self = this;
         l = new LogFile(file);
-        f = new SCFrame(l.name,l.items,x,y);
+        f = new SCFrame(l.name,l.items,l.order,x,y);
     }
 
     public static void main(String args[]) {

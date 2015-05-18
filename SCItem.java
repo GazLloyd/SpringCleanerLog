@@ -1,5 +1,7 @@
 package com.gmail.gazllloyd.springcleanerlog;
 
+import com.gmail.gazllloyd.springcleanerlog.gui.CounterType;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,27 +122,31 @@ public class SCItem extends Observable {
     }
 
 
-    public void setValue(String s, int v) {
-        if (s.equalsIgnoreCase("success"))
-            success = v;
-        else if (s.equalsIgnoreCase("failure"))
-            failure = v;
-        else if (s.equalsIgnoreCase("partial"))
-            partial = v;
-        else
-            partials.put(s, v);
-        update();
+    public void setValue(CounterType s, int v) {
+        switch (s) {
+            case SUCCESS:
+                setSuccess(v);
+                break;
+            case FAILURE:
+                setFailure(v);
+                break;
+            case PARTIAL:
+                setPartial(v);
+                break;
+        }
     }
 
 
-    public int increment(String s) {
-        if (s.equalsIgnoreCase("success"))
-            return incrementSuccess();
-        if (s.equalsIgnoreCase("failure"))
-            return incrementFailure();
-        if (s.equalsIgnoreCase("partial"))
-            return incrementPartial();
-        return incrementPartial(s);
+    public int increment(CounterType s) {
+        switch (s) {
+            case SUCCESS:
+                return incrementSuccess();
+            case FAILURE:
+                return incrementFailure();
+            case PARTIAL:
+                return incrementPartial();
+        }
+        return 0;
     }
 
     public int incrementSuccess() {
@@ -168,11 +174,35 @@ public class SCItem extends Observable {
         return partials.get(p);
     }
 
+
+    public void setSuccess(int success) {
+        this.success = success;
+        update();
+    }
+
+    public void setFailure(int failure) {
+        this.failure = failure;
+        update();
+    }
+
+    public void setPartial(int partial) {
+        this.partial = partial;
+        update();
+    }
+
+    public void setPartial(String p, int v) {
+        this.partials.put(p,v);
+        update();
+    }
+
     public void update() {
         setChanged();
         notifyObservers();
     }
 
+    public ArrayList<String> getOrder() {
+        return order;
+    }
 
     public String getName() {
         return name;

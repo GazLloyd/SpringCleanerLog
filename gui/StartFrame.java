@@ -25,6 +25,8 @@ public class StartFrame extends JFrame {
         self = this;
 
         setTitle("Spring cleaner logger");
+        setIconImage(Toolkit.getDefaultToolkit().createImage(this.getClass().getResource(SpringCleanerLog.iconimg)));
+        setResizable(false);
 
         JTextPane intro = new JTextPane();
         intro.setEditable(false);

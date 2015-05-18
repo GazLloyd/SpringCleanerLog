@@ -29,9 +29,11 @@ public class OpenAction extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        SpringCleanerLog.log.info("Showing filechooser");
         int returnvalue = filechooser.showOpenDialog(frame);
         if (returnvalue == JFileChooser.APPROVE_OPTION) {
             File openedfile = filechooser.getSelectedFile();
+            SpringCleanerLog.log.info("Accepted! Opening file "+openedfile.getAbsolutePath());
             SpringCleanerLog.remake(openedfile,frame.getX(),frame.getY());
             //SCFrame f = new SCFrame(l.name, l.items);
             frame.dispose();
