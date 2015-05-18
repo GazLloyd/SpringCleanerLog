@@ -127,7 +127,12 @@ public class SCFrame extends JFrame {
 
 
             JPanel itempanelpartial;
-            if (item.isMultiPartial()) {
+            if (item.hasNoPartial()) {
+                itempanelpartial = new JPanel();
+                itempanel.add(Box.createHorizontalGlue());
+                itempanelpartial.add(new JLabel("no partial failure"));
+            }
+            else if (item.isMultiPartial()) {
                 itempanelpartial = new JPanel();
                 itempanelpartial.setLayout(new BoxLayout(itempanelpartial, BoxLayout.Y_AXIS));
                 //itempanelpartial.setAlignmentY(CENTER_ALIGNMENT);
@@ -171,17 +176,10 @@ public class SCFrame extends JFrame {
 
             contentpanel.add(itempanel);
 
-            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             pack();
             setVisible(true);
         }
     }
-
-
-    public static void main(String[] args) {
-        LogFile l = new LogFile("D:\\Gaz\\Docs\\Dropbox\\development\\sclog.txt");
-        //SCFrame frame = new SCFrame("SCFrame", l.items);
-    }
-
 
 }

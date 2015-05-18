@@ -12,24 +12,33 @@ public class SCItem extends Observable {
     private String name;
     private int success = 0;
     private int failure = 0;
-    private boolean isMultiPartial;
+    private PartialType partialtype;
     private int partial = 0;
     private HashMap<String,Integer> partials;
+    private ArrayList<String> order;
+
+    public SCItem(String name, int success, int failure) {
+        this.name = name;
+        this.success = success;
+        this.failure = failure;
+        this.partialtype = PartialType.NO_PARTIAL;
+    }
 
     public SCItem(String name, int success, int failure, int partial) {
         this.name = name;
         this.success = success;
         this.failure = failure;
         this.partial = partial;
-        this.isMultiPartial = false;
+        this.partialtype = PartialType.ONE_PARTIAL;
     }
 
-    public SCItem(String name, int success, int failure, HashMap<String,Integer> partials) {
+    public SCItem(String name, int success, int failure, HashMap<String,Integer> partials, ArrayList<String> order) {
         this.name = name;
         this.success = success;
         this.failure = failure;
         this.partials = partials;
-        this.isMultiPartial = true;
+        this.order = order;
+        this.partialtype = PartialType.MULTI_PARTIAL;
     }
 
     public static SCItem makeSCItem(String line) {
@@ -38,39 +47,50 @@ public class SCItem extends Observable {
     }
 
     public static SCItem makeSCItem(String[] linevals) {
-        int s=0, f=0, p=0;
-        HashMap<String,Integer> ps;
+        int s=0, f=0, p=0; //successes, failures, singlepartials
+        String n = linevals[0]; //name
+        HashMap<String,Integer> ps; //multipartials
+        ArrayList<String> o; //order
 
         try {
             s = Integer.parseInt(linevals[1]);
-        } catch(NumberFormatException e) {
+        } catch(NumberFormatException|ArrayIndexOutOfBoundsException e) {
             s = 0;
         }
 
         try {
             f = Integer.parseInt(linevals[2]);
-        } catch(NumberFormatException e) {
+        } catch(NumberFormatException|ArrayIndexOutOfBoundsException e) {
             f = 0;
         }
 
-        try {
-            p = Integer.parseInt(linevals[3]);
-        } catch(NumberFormatException e) {
-            ps = new HashMap<String, Integer>();
-            int psi;
-            for (int i = 3; i < linevals.length; i+=2  ) {
-                psi = 0;
+        switch(linevals.length) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                return new SCItem(n,s,f); //name, success, failure = no partials
+            case 4:
                 try {
-                    psi = Integer.parseInt(linevals[i+1]);
-                } catch(NumberFormatException e1) {
-                    psi = 0;
+                    p = Integer.parseInt(linevals[3]);
+                } catch (NumberFormatException e)  {
+                    p = 0;
                 }
-                ps.put(linevals[i], psi);
-            }
-            return new SCItem(linevals[0], s, f, ps);
+                return new SCItem(n,s,f,p); //name, success, failure, onepartial
+            default:
+                ps = new HashMap<String, Integer>();
+                o = new ArrayList<String>();
+                for (int i = 3; i < linevals.length; i+=2  ) {
+                    try {
+                        p = Integer.parseInt(linevals[i+1]);
+                    } catch(NumberFormatException e) {
+                        p = 0;
+                    }
+                    ps.put(linevals[i], p);
+                    o.add(linevals[i]);
+                }
+                return new SCItem(n,s,f,ps,o); //name, success, failure, multiple partial states, order of those
         }
-
-        return new SCItem(linevals[0], s, f, p);
     }
 
     public String[] getWritable() {
@@ -78,17 +98,20 @@ public class SCItem extends Observable {
         w.add(name);
         w.add(""+success);
         w.add(""+failure);
-        if (isMultiPartial) {
-            for (String i : partials.keySet()) {
-                w.add(i);
-                w.add(partials.get(i).toString());
-            }
+        switch (partialtype) {
+            case NO_PARTIAL:
+                break;
+            case ONE_PARTIAL:
+                w.add(""+partial);
+                break;
+            case MULTI_PARTIAL:
+                for (String i : order) {
+                    w.add(i);
+                    w.add(partials.get(i).toString());
+                }
+                break;
         }
-        else {
-            w.add(""+partial);
-        }
-        String [] a = new String[1];
-        return w.toArray(a);
+        return w.toArray(new String[1]);
     }
 
     @Override
@@ -131,13 +154,15 @@ public class SCItem extends Observable {
         return failure;
     }
     public int incrementPartial() {
-        if (isMultiPartial)
+        if (partialtype != PartialType.ONE_PARTIAL)
             return 0;
         partial++;
         update();
         return partial;
     }
     public int incrementPartial(String p) {
+        if (partialtype != PartialType.MULTI_PARTIAL)
+            return 0;
         partials.put(p, partials.get(p)+1);
         update();
         return partials.get(p);
@@ -162,14 +187,24 @@ public class SCItem extends Observable {
     }
 
     public boolean isMultiPartial() {
-        return isMultiPartial;
+        return partialtype == PartialType.MULTI_PARTIAL;
+    }
+    public boolean hasNoPartial() {
+        return partialtype == PartialType.NO_PARTIAL;
+    }
+    public boolean hasOnePartial() {
+        return partialtype == PartialType.ONE_PARTIAL;
+    }
+
+    public PartialType getPartialtype() {
+        return partialtype;
     }
 
     public int getPartial() {
         return partial;
     }
     public int getPartial(String p) {
-        if (!isMultiPartial)
+        if (partialtype != PartialType.MULTI_PARTIAL)
             return 0;
         return partials.get(p);
     }

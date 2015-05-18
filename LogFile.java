@@ -18,6 +18,7 @@ public class LogFile implements Observer {
     static Logger log = SpringCleanerLog.log;
     public File file;
     public HashMap<String,SCItem> items;
+    public ArrayList<String> order;
     public String name;
     public SCFrame frame;
 
@@ -39,10 +40,12 @@ public class LogFile implements Observer {
             r = new CSVReader(new FileReader(file));
             String[] nextline;
             SCItem item;
+            order = new ArrayList<String>();
             items = new HashMap<String, SCItem>();
             while ((nextline = r.readNext()) != null) {
                 item = SCItem.makeSCItem(nextline);
                 item.addObserver(this);
+                order.add(item.getName());
                 items.put(item.getName(),item);
             }
         } catch(Exception e) {
@@ -57,7 +60,7 @@ public class LogFile implements Observer {
 
     private List<String[]> toWritable() {
         ArrayList<String[]> w = new ArrayList<String[]>();
-        for (String i : items.keySet()) {
+        for (String i : order) {
             w.add(items.get(i).getWritable());
         }
         return w;
