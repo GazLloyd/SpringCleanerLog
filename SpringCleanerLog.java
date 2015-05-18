@@ -8,6 +8,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.util.logging.Logger;
 
@@ -21,8 +22,10 @@ public class SpringCleanerLog {
     public static SpringCleanerLog self;
     public static String githuburl = "https://github.com/GazLloyd";
     public static String iconimg = "/img/Spring_cleaner_detail.png";
+    public static Point loc;
 
     public static SpringCleanerLog remake(File file, int x, int y) {
+        loc = new Point(x,y);
         return new SpringCleanerLog(file,x,y);
     }
 
@@ -40,6 +43,7 @@ public class SpringCleanerLog {
         log.config("Setting up options...");
         Options options = new Options();
         options.addOption("f", true, "file to open");
+        loc = new Point(100,100);
 
         File input = null;
 
@@ -68,7 +72,7 @@ public class SpringCleanerLog {
         }
 
         if (input != null)
-            remake(input,0,0);
+            remake(input,loc.x,loc.y);
         else
             new StartFrame();
     }

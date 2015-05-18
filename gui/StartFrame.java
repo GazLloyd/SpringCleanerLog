@@ -24,6 +24,7 @@ public class StartFrame extends JFrame {
         nl = System.lineSeparator();
         self = this;
 
+        setLocation(SpringCleanerLog.loc.x,SpringCleanerLog.loc.y);
         setTitle("Spring cleaner logger");
         setIconImage(Toolkit.getDefaultToolkit().createImage(this.getClass().getResource(SpringCleanerLog.iconimg)));
         setResizable(false);
